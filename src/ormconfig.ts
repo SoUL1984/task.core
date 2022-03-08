@@ -2,7 +2,7 @@ import { ConnectionOptions } from 'typeorm';
 
 const config: ConnectionOptions = {
     type: 'postgres',
-    database: process.env.POSTGRES_DATABASE || 'db',
+    database: process.env.POSTGRES_DB || 'db',
     logging: true,
     host: process.env.POSTGRES_HOST || 'localhost',
     port: parseInt(process.env.POSTGRES_PORT || '5432'),

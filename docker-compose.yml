@@ -24,11 +24,10 @@ services:
     env_file:
       - .env
     environment:
-      - PG_DATA:/var/lib/postgresql/data
+      PG_DATA: /var/lib/postgresql/data
     ports:
       - 5432:5432
     volumes:
-      - ./init-dbtask/init-dbtask.sql:/docker-entrypoint-initdb.d/init-dbtask.sql
       - pgdata:/var/lib/postgresql/data
     restart: always 
 
