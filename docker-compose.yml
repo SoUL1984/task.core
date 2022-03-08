@@ -1,0 +1,38 @@
+version: '3.0'
+
+services:
+  main_task:
+    container_name: main_task
+    build:
+      context: .
+    ports:
+      - "5000:5000"
+      - "9229:9229"
+    env_file:
+      - .env
+    volumes:
+      - .:/home/node/app
+      - /app/node_modules
+    command: npm run start:dev
+    depends_on:
+      - taskdb_postgres
+    restart: always
+
+  taskdb_postgres:
+    image: postgres:12
+    container_name: taskdb_postgres
+    env_file:
+      - .env
+    environment:
+      - PG_DATA:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    volumes:
+      - ./init-dbtask/init-dbtask.sql:/docker-entrypoint-initdb.d/init-dbtask.sql
+      - pgdata:/var/lib/postgresql/data
+    restart: always 
+
+volumes:
+  pgdata:
+
+

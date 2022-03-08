@@ -1,0 +1,15 @@
+{
+    "type": "postgres",
+    "database": "taskdb",
+    "logging": true,
+    "host": "localhost",
+    "port": "5432",
+    "username": "UserTask",
+    "password": "UserTask!",
+    "entities": ["dist/Infrastructure/Entity/**/*.js"],
+    "migrations": ["dist/Infrastructure/Migration/**/*.js"],
+    "cli": {
+        "migrationsDir": "src/Infrastructure/Migrations"
+    },
+    "synchronize": false
+}
