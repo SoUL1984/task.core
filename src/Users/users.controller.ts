@@ -41,15 +41,15 @@ export class UsersController {
         const userSelectAll: UserFindAllOptions = {
             page: currPage,
             limit: currLimit,
-            where: userDto,
+            param: userDto,
         };
 
         const allUsersAndTotal = await this.userService.getAllUsers(
             userSelectAll,
         );
 
-        const users = allUsersAndTotal.users;
-        const total = allUsersAndTotal.total;
+        const users = allUsersAndTotal.listUser;
+        const total = allUsersAndTotal.count;
 
         // информация о пагинации
         const count = {

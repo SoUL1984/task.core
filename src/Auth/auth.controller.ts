@@ -10,18 +10,6 @@ export class AuthController {
 
     @Post('/login')
     login(@Body() userDto: AuthUserDto) {
-        // let userEmail = null;
-        // let userPhone = null;
-        // const userPassword = userDto.password;
-        // if (userDto.email) userEmail = userDto.email;
-        // if (userDto.email) userPhone = userDto.phone;
-
-        // const userLogin: AuthUserDto = {
-        //     email: userEmail,
-        //     phone: userPhone,
-        //     password: userPassword,
-        // };
-
         return this.authService.login(userDto);
     }
 

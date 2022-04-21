@@ -1,5 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
-import { HttpException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from '../Infrastructure/Entity/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -8,8 +7,7 @@ import { InsertResult } from 'typeorm';
 import { SelectAllUserDto } from './dto/select-all-user.dto';
 
 export interface UserFindAllOptions {
-    where?: SelectAllUserDto;
-
+    param?: SelectAllUserDto;
     page?: number;
     limit?: number;
 }
@@ -19,113 +17,43 @@ export class UsersService {
     constructor(@InjectRepository(User) private userRepository: typeof User) {}
 
     async createUser(dto: CreateUserDto): Promise<InsertResult> {
-        let user: InsertResult = null;
-
-        try {
-            user = await this.userRepository.insert(dto);
-        } catch (error) {
-            throw new HttpException(
-                'Возникла ошибка при добавлении пользователя.',
-                HttpStatus.BAD_REQUEST,
-            );
-        }
-
-        return user;
+        return await this.userRepository.insert(dto);
     }
 
     async getAllUsers(options: UserFindAllOptions = {}) {
-        const { where, limit, page } = options;
+        const { param, limit, page } = options;
 
-        let [users, total] = [[], 0];
+        const { email, name, phone, role } = param;
 
-        try {
-            const qb = this.userRepository.createQueryBuilder('User');
+        const nameSearch = name;
+        const [listUser, count] = await this.userRepository
+            .createQueryBuilder('user')
+            .where(email ? 'user.email = :email' : 'TRUE', { email })
+            .andWhere(name ? 'user.name like :name' : 'TRUE', {
+                name: `%${nameSearch}%`,
+            })
+            .andWhere(phone ? 'user.phone = :phone' : 'TRUE', { phone })
+            .andWhere(role ? 'user.role = :role' : 'TRUE', { role })
+            .offset((page - 1) * limit ?? 0)
+            .limit(limit ?? 20)
+            .getManyAndCount();
 
-            if (where) {
-                // поиск по всем условиям
-                const {
-                    email,
-                    name,
-                    city,
-                    address,
-                    desc,
-                    phone,
-                    birthday,
-                    role,
-                    lastVisit,
-                    createdAt,
-                    updatedAt,
-                } = where;
-
-                const nameSearch = name;
-
-                if (email) qb.orWhere('User.email = :email', { email });
-                if (name)
-                    qb.orWhere('User.name like :name', {
-                        name: `%${nameSearch}%`,
-                    });
-                if (city) qb.orWhere('User.city = :city', { city });
-                if (address) qb.orWhere('User.address = :address', { address });
-                if (desc) qb.orWhere('User.desc = :desc', { desc });
-                if (phone) qb.orWhere('User.phone = :phone', { phone });
-                if (birthday)
-                    qb.orWhere('User.birthday = :birthday', { birthday });
-                if (role) qb.orWhere('User.role = :role', { role });
-                if (lastVisit)
-                    qb.orWhere('User.lastVisit = :lastVisit', { lastVisit });
-                if (createdAt)
-                    qb.orWhere('User.createdAt = :createdAt', { createdAt });
-                if (updatedAt)
-                    qb.orWhere('User.updatedAt = :updatedAt', { updatedAt });
-            }
-
-            qb.offset(page ?? 0);
-            qb.limit(limit ?? 20);
-
-            [users, total] = await qb.getManyAndCount();
-        } catch (error) {
-            throw new HttpException(
-                'Возникла ошибка при получении списка пользователей.',
-                HttpStatus.BAD_REQUEST,
-            );
-        }
-
-        return { users, total };
+        return { listUser, count };
     }
 
     async getUserByEmail(email: string): Promise<User> {
-        let user = null;
-
-        try {
-            user = await this.userRepository.findOne({ where: { email } });
-        } catch (error) {
-            throw new HttpException(
-                'Возникла ошибка при поиске пользователя.',
-                HttpStatus.BAD_REQUEST,
-            );
-        }
-
-        return user;
+        return this.userRepository.findOne({ where: { email } });
     }
 
     async getUserByEmailOrPhone(dto: AuthUserDto): Promise<User> {
-        let user = null;
-
         const email = dto.email;
         const phone = dto.phone;
 
-        try {
-            const qb = this.userRepository.createQueryBuilder('User');
-            if (email) qb.where('User.email = :email', { email });
-            if (phone) qb.orWhere('User.phone = :phone', { phone });
+        const qb = this.userRepository.createQueryBuilder('User')
+            .where(email ? 'user.email = :email' : 'TRUE', { email })
+            .orWhere(phone ? 'user.phone = :phone' : 'TRUE', { phone });
 
-            user = await qb.getOne();
-        } catch (e) {
-            throw new HttpException(
-                'Возникла ошибка при поиске пользователя.',
-                HttpStatus.BAD_REQUEST,
-            );
-        }
+        const user = await qb.getOne();
 
         return user;
     }
@@ -136,20 +64,10 @@ export class UsersService {
     ): Promise<boolean> {
         let isUpdate = false;
 
-        try {
-            const vUpdateUser = await this.userRepository.update(
-                { email },
-                dto,
-            );
+        const vUpdateUser = await this.userRepository.update({ email }, dto);
 
-            if (vUpdateUser.affected > 0) {
-                isUpdate = true;
-            }
-        } catch (e) {
-            throw new HttpException(
-                'Возникла ошибка при обновлении данных пользователя.',
-                HttpStatus.BAD_REQUEST,
-            );
+        if (vUpdateUser.affected > 0) {
+            isUpdate = true;
         }
 
         return isUpdate;
@@ -157,17 +75,10 @@ export class UsersService {
     async deleteUserByEmail(email: string): Promise<boolean> {
         let isDelete = false;
 
-        try {
-            const vDeleteUser = await this.userRepository.delete({ email });
+        const vDeleteUser = await this.userRepository.delete({ email });
 
-            if (vDeleteUser.affected > 0) {
-                isDelete = true;
-            }
-        } catch (e) {
-            throw new HttpException(
-                'Возникла ошибка при удалении пользователя.',
-                HttpStatus.BAD_REQUEST,
-            );
+        if (vDeleteUser.affected > 0) {
+            isDelete = true;
         }
 
         return isDelete;
