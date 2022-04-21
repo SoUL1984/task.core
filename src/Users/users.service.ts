@@ -25,18 +25,29 @@ export class UsersService {
 
         const { email, name, phone, role } = param;
 
+        let [listUser, count] = [[], 0];
+
         const nameSearch = name;
-        const [listUser, count] = await this.userRepository
-            .createQueryBuilder('user')
-            .where(email ? 'user.email = :email' : 'TRUE', { email })
-            .andWhere(name ? 'user.name like :name' : 'TRUE', {
+        const qb = this.userRepository.createQueryBuilder('user');
+
+        if (email) {
+            qb.where('user.email = :email', { email });
+        }
+        if (name) {
+            qb.andWhere('user.name like :name', {
                 name: `%${nameSearch}%`,
-            })
-            .andWhere(phone ? 'user.phone = :phone' : 'TRUE', { phone })
-            .andWhere(role ? 'user.role = :role' : 'TRUE', { role })
-            .offset((page - 1) * limit ?? 0)
-            .limit(limit ?? 20)
-            .getManyAndCount();
+            });
+        }
+        if (phone) {
+            qb.andWhere('user.phone = :phone', { phone });
+        }
+        if (role) {
+            qb.andWhere('user.role = :role', { role });
+        }
+
+        qb.offset((page - 1) * limit ?? 0).limit(limit ?? 20);
+
+        [listUser, count] = await qb.getManyAndCount();
 
         return { listUser, count };
     }
@@ -49,7 +60,8 @@ export class UsersService {
         const email = dto.email;
         const phone = dto.phone;
 
-        const qb = this.userRepository.createQueryBuilder('User')
+        const qb = this.userRepository
+            .createQueryBuilder('User')
             .where(email ? 'user.email = :email' : 'TRUE', { email })
             .orWhere(phone ? 'user.phone = :phone' : 'TRUE', { phone });
 
